@@ -1,37 +1,89 @@
+import dash
+import dash_core_components as dcc
+import dash_html_components as html
+from dash.dependencies import Input, Output
+import plotly.express as px
 import seaborn as sns
-import matplotlib.pyplot as plt
 import pandas as pd
 
 # Load the Iris dataset
 iris = sns.load_dataset("iris")
 
-# Set up the dashboard layout
-fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(15, 10))
-plt.subplots_adjust(wspace=0.5, hspace=0.5)
+# Initialize the Dash app
+app = dash.Dash(__name__)
 
-# 1. Pie Chart
-iris_species_counts = iris['species'].value_counts()
-axes[0, 0].pie(iris_species_counts, labels=iris_species_counts.index, autopct='%1.3f%%', startangle=90)
-axes[0, 0].set_title('Pie Chart')
+# Define the layout of the dashboard
+app.layout = html.Div([
+    # Row 1
+    html.Div([
+        # Pie Chart
+        dcc.Graph(id='pie-chart', className='col', style={'width': '50%'}),
+        # Scatter Plot
+        dcc.Graph(id='scatter-plot', className='col', style={'width': '50%'}),
+    ], className='row'),
 
-# 2. Line Chart
-sns.lineplot(data=iris, x='species', y='sepal_width', ax=axes[0, 1])
-axes[0, 1].set_title('Line Chart')
+    # Row 2
+    html.Div([
+        # Stacked Bar Chart
+        dcc.Graph(id='stacked-bar-chart', className='col', style={'width': '50%'}),
+        # Line Chart
+        dcc.Graph(id='line-chart', className='col', style={'width': '50%'}),
+    ], className='row'),
 
-# 3. Stacked Bar Chart
-sns.barplot(data=iris, x='species', y='petal_length', hue='species', ax=axes[0, 2], estimator=sum)
-axes[0, 2].set_title('Stacked Bar Chart')
+    # Row 3
+    html.Div([
+        # Data Table
+        dcc.Graph(id='data-table', className='col', style={'width': '100%'}),
+    ], className='row'),
+])
 
-# 4. Scatter Plot
-sns.scatterplot(data=iris, x='sepal_length', y='sepal_width', hue='species', ax=axes[1, 0])
-axes[1, 0].set_title('Scatter Plot')
+# Define callback functions to update charts based on user input
+@app.callback(
+    Output('pie-chart', 'figure'),
+    Output('scatter-plot', 'figure'),
+    Output('stacked-bar-chart', 'figure'),
+    Output('line-chart', 'figure'),
+    Output('data-table', 'figure'),
+    Input('pie-chart', 'hoverData'),
+    Input('scatter-plot', 'hoverData'),
+    Input('stacked-bar-chart', 'hoverData'),
+    Input('line-chart', 'hoverData'),
+)
+def update_charts(pie_hover, scatter_hover, stacked_bar_hover, line_hover):
+    # Define functions to create individual charts
+    def create_pie_chart():
+        fig = px.pie(iris, names='species', title='Pie Chart', hole=0.3, labels={'species': 'Species'})
+        return fig
 
-# 5. Heat Map
-sns.heatmap(iris.describe()[1:].transpose(), annot=True, cmap='Blues', linewidths=0.5, ax=axes[1, 1])
-axes[1, 1].set_title('Heat Map')
+    def create_scatter_plot():
+        fig = px.scatter(iris, x='sepal_width', y='sepal_length', color='species', title='Scatter Plot',
+                         labels={'sepal_width': 'Sepal Width', 'sepal_length': 'Sepal Length'})
+        return fig
 
-# Remove empty subplot
-fig.delaxes(axes[1, 2])
+    def create_stacked_bar_chart():
+        fig = px.bar(iris, x='species', y='sepal_width', color='species', title='Stacked Bar Chart',
+                     labels={'sepal_width': 'Sepal Width'})
+        return fig
 
-# Show the plots
-plt.show()
+    def create_line_chart():
+        fig = px.line(iris, x='species', y='sepal_width', color='species', title='Line Chart',
+                      labels={'sepal_width': 'Sepal Width'})
+        return fig
+
+    def create_data_table():
+        fig = px.scatter(iris, x='sepal_width', y='sepal_length', color='species', title='Data Table',
+                         labels={'sepal_width': 'Sepal Width', 'sepal_length': 'Sepal Length'})
+        return fig
+
+    # Call the appropriate function based on the input
+    pie_chart = create_pie_chart()
+    scatter_plot = create_scatter_plot()
+    stacked_bar_chart = create_stacked_bar_chart()
+    line_chart = create_line_chart()
+    data_table = create_data_table()
+
+    return pie_chart, scatter_plot, stacked_bar_chart, line_chart, data_table
+
+# Run the app
+if __name__ == '__main__':
+    app.run_server(debug=True)
